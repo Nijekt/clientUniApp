@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAuth, isAuthSelector } from "../../redux/slices/authSlice";
 import styles from "./LoginPage.module.css";
-import { Navigate } from "react-router-dom";
+import { Navigate, NavLink } from "react-router-dom";
 
 const LoginPage = () => {
   const dispatch = useDispatch();
@@ -85,6 +85,12 @@ const LoginPage = () => {
           <button type="submit">Zaloguj się</button>
         </form>
       </div>
+      <NavLink
+        to={"/"}
+        style={{ width: "460px", display: "block", margin: "0 auto" }}
+      >
+        <button>Rejestracja</button>
+      </NavLink>
     </div>
   );
 };

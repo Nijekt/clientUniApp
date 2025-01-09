@@ -6,6 +6,7 @@ import AddTasks from "./pages/AddTasks";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAuthMe, isAuthSelector } from "./redux/slices/authSlice";
 import { useEffect } from "react";
+import TakList from "./pages/TaskList";
 
 function App() {
   const dispatch = useDispatch();
@@ -19,6 +20,7 @@ function App() {
         <Route path="/" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/home" element={<AddTasks />} />
+        <Route path="/tasks" element={<TakList />} />
       </Routes>
     </>
   );

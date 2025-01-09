@@ -66,3 +66,15 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 } */
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  width: 100vw;
+}
+
+a {
+  text-decoration: none;
+}

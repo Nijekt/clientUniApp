@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchRegister, isAuthSelector } from "../../redux/slices/authSlice";
 import styles from "./RegisterPage.module.css";
-import { useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 const RegisterPage = () => {
   const dispatch = useDispatch();
@@ -106,7 +106,7 @@ const RegisterPage = () => {
             <span className={styles.error}>{formErrors.role}</span>
           )}
 
-          {formValues.role === "manager" && (
+          {formValues.role === "worker" && (
             <div id="departmentSection">
               <label htmlFor="department">Wybierz dział:</label>
               <select
@@ -126,6 +126,12 @@ const RegisterPage = () => {
           <button type="submit">Zarejestruj się</button>
         </form>
       </div>
+      <NavLink
+        to={"/login"}
+        style={{ width: "460px", display: "block", margin: "0 auto" }}
+      >
+        <button>Logowanie</button>
+      </NavLink>
     </div>
   );
 };

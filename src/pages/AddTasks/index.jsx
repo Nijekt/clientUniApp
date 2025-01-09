@@ -1,10 +1,14 @@
 import React, { useState, useRef } from "react";
 import styles from "./AddTasks.module.css";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import axios from "../../axios.js";
 import * as sdk from "microsoft-cognitiveservices-speech-sdk";
+import { Link } from "react-router-dom";
+import { isAuthSelector, logout } from "../../redux/slices/authSlice.js";
+import { Navigate } from "react-router-dom";
 
 function AddTasks() {
+  const isAuth = useSelector(isAuthSelector);
   const { data } = useSelector((state) => state.auth);
   const [text, setText] = useState("");
   const [departmentText, setDepartmentText] = useState("");
@@ -29,10 +33,18 @@ function AddTasks() {
   const inputFileRefDepartment = useRef(null);
   const [fileName, setFileName] = useState("");
   const [fileNameDepartment, setFileNameDepartment] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const dispatch = useDispatch();
 
   const recognizerRefPersonal = useRef(null);
   const recognizerRefDepartment = useRef(null);
   const recognizerRefWorker = useRef(null);
+
+  const departmentOptions = [
+    { label: "Marketing", value: "marketing" },
+    { label: "Prawnicy", value: "legal" },
+    { label: "Adwokaci", value: "advocacy" },
+  ];
 
   const languageOptions = [
     { label: "English (US)", value: "en-US" },
@@ -152,7 +164,7 @@ function AddTasks() {
   const onSubmitDepartment = async (text) => {
     console.log(fileUrlDepartment);
 
-    const field = { text, fileUrlDepartment };
+    const field = { text, fileUrlDepartment, department: selectedDepartment };
     const { data } = await axios.post("api/createPersonalTask", field);
 
     console.log(data);
@@ -160,206 +172,274 @@ function AddTasks() {
 
   console.log(fileUrlDepartment);
 
-  return (
-    <div className={styles.container} id="dashboardContainer">
-      {data?.role === "manager" ? (
-        <div id="managerSection">
-          <h3>Dodaj zadanie dla działu:</h3>
-          <div className={styles.languageDropdownWrapper}>
-            <button
-              className={styles.languageButton}
-              onClick={() => setIsLanguageMenuOpenDepartment((prev) => !prev)}
-            >
-              {languageOptions.find(
-                (option) => option.value === selectedLanguageDepartment
-              )?.label || "Select Language"}
-              <span className={styles.arrow}>
-                {isLanguageMenuOpenDepartment ? "▲" : "▼"}
-              </span>
-            </button>
-            {isLanguageMenuOpenDepartment && (
-              <ul className={styles.languageDropdownMenu}>
-                {languageOptions.map((option) => (
-                  <li
-                    key={option.value}
-                    className={`${styles.languageOption} ${
-                      option.value === selectedLanguageDepartment
-                        ? styles.selected
-                        : ""
-                    }`}
-                    onClick={() => {
-                      setSelectedLanguageDepartment(option.value);
-                      setIsLanguageMenuOpenDepartment(false);
-                    }}
-                  >
-                    {option.label}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <button
-            onClick={() => toggleSpeechRecognition("department")}
-            className={styles.microphoneButton}
-          >
-            {isListeningDepartment ? "Stop Listening" : "Start Listening"}
-          </button>
-          <textarea
-            id="taskInput"
-            placeholder="Opisz zadanie"
-            value={departmentText}
-            onChange={(e) => setDepartmentText(e.target.value)}
-          ></textarea>
-          <input
-            ref={inputFileRefDepartment}
-            type="file"
-            onChange={handleChangeFileDepartment}
-            hidden
-          />
-          <button
-            className={styles.img__button}
-            onClick={() => inputFileRefDepartment.current.click()}
-          >
-            {fileNameDepartment || "Add File"}
-          </button>
-          <button
-            id="addDepartmentTask"
-            onClick={() => onSubmitDepartment(departmentText)}
-          >
-            Dodaj zadanie
-          </button>
+  const handleLogout = () => {
+    dispatch(logout());
 
-          <h3>Osobiste zadania kierownika:</h3>
-          <div className={styles.languageDropdownWrapper}>
+    window.localStorage.removeItem("token");
+  };
+
+  if (!isAuth) {
+    return <Navigate to="/login" replace={true} />;
+  }
+
+  return (
+    <>
+      <div className={styles.container} id="dashboardContainer">
+        {data?.role === "manager" ? (
+          <div id="managerSection">
+            <h3>Dodaj zadanie dla działu:</h3>
+            <div className={styles.languageDropdownWrapper}>
+              <button
+                className={styles.languageButton}
+                onClick={() => setIsLanguageMenuOpenDepartment((prev) => !prev)}
+              >
+                {languageOptions.find(
+                  (option) => option.value === selectedLanguageDepartment
+                )?.label || "Select Language"}
+                <span className={styles.arrow}>
+                  {isLanguageMenuOpenDepartment ? "▲" : "▼"}
+                </span>
+              </button>
+              {isLanguageMenuOpenDepartment && (
+                <ul className={styles.languageDropdownMenu}>
+                  {languageOptions.map((option) => (
+                    <li
+                      key={option.value}
+                      className={`${styles.languageOption} ${
+                        option.value === selectedLanguageDepartment
+                          ? styles.selected
+                          : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedLanguageDepartment(option.value);
+                        setIsLanguageMenuOpenDepartment(false);
+                      }}
+                    >
+                      {option.label}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className={styles.departmentDropdownWrapper}>
+              <button
+                className={styles.languageButton}
+                onClick={() => setIsLanguageMenuOpenWorker((prev) => !prev)}
+              >
+                {departmentOptions.find(
+                  (option) => option.value === selectedDepartment
+                )?.label || "Wybierz dział"}
+                <span className={styles.arrow}>
+                  {isLanguageMenuOpenWorker ? "▲" : "▼"}
+                </span>
+              </button>
+              {isLanguageMenuOpenWorker && (
+                <ul className={styles.languageDropdownMenu}>
+                  {departmentOptions.map((option) => (
+                    <li
+                      key={option.value}
+                      className={`${styles.languageOption} ${
+                        option.value === selectedDepartment
+                          ? styles.selected
+                          : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedDepartment(option.value);
+                        setIsLanguageMenuOpenWorker(false);
+                      }}
+                    >
+                      {option.label}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <button
-              className={styles.languageButton}
-              onClick={() => setIsLanguageMenuOpenPersonal((prev) => !prev)}
+              onClick={() => toggleSpeechRecognition("department")}
+              className={styles.microphoneButton}
             >
-              {languageOptions.find(
-                (option) => option.value === selectedLanguagePersonal
-              )?.label || "Select Language"}
-              <span className={styles.arrow}>
-                {isLanguageMenuOpenPersonal ? "▲" : "▼"}
-              </span>
+              {isListeningDepartment ? "Przestań słuchać" : "Zacznij słuchać"}
             </button>
-            {isLanguageMenuOpenPersonal && (
-              <ul className={styles.languageDropdownMenu}>
-                {languageOptions.map((option) => (
-                  <li
-                    key={option.value}
-                    className={`${styles.languageOption} ${
-                      option.value === selectedLanguagePersonal
-                        ? styles.selected
-                        : ""
-                    }`}
-                    onClick={() => {
-                      setSelectedLanguagePersonal(option.value);
-                      setIsLanguageMenuOpenPersonal(false);
-                    }}
-                  >
-                    {option.label}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <button
-            onClick={() => toggleSpeechRecognition("personal")}
-            className={styles.microphoneButton}
-          >
-            {isListeningPersonal ? "Stop Listening" : "Start Listening"}
-          </button>
-          <textarea
-            id="personalManagerTaskInput"
-            placeholder="Dodaj osobiste zadanie"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          ></textarea>
-          <input
-            ref={inputFileRef}
-            type="file"
-            onChange={handleChangeFile}
-            hidden
-          />
-          <button
-            className={styles.img__button}
-            onClick={() => inputFileRef.current.click()}
-          >
-            {fileName || "Add File"}
-          </button>
-          <button id="addPersonalManagerTask" onClick={() => onSubmit(text)}>
-            Dodaj osobiste zadanie
-          </button>
-        </div>
-      ) : (
-        <div id="workerSection">
-          <h3>Osobiste zadania pracownika:</h3>
-          <div className={styles.languageDropdownWrapper}>
+            <textarea
+              id="taskInput"
+              placeholder="Opisz zadanie"
+              value={departmentText}
+              onChange={(e) => setDepartmentText(e.target.value)}
+            ></textarea>
+            <input
+              ref={inputFileRefDepartment}
+              type="file"
+              onChange={handleChangeFileDepartment}
+              hidden
+            />
             <button
-              className={styles.languageButton}
-              onClick={() => setIsLanguageMenuOpenWorker((prev) => !prev)}
+              className={styles.img__button}
+              onClick={() => inputFileRefDepartment.current.click()}
             >
-              {languageOptions.find(
-                (option) => option.value === selectedLanguageWorker
-              )?.label || "Select Language"}
-              <span className={styles.arrow}>
-                {isLanguageMenuOpenWorker ? "▲" : "▼"}
-              </span>
+              {fileNameDepartment || "Dodaj plik"}
             </button>
-            {isLanguageMenuOpenWorker && (
-              <ul className={styles.languageDropdownMenu}>
-                {languageOptions.map((option) => (
-                  <li
-                    key={option.value}
-                    className={`${styles.languageOption} ${
-                      option.value === selectedLanguageWorker
-                        ? styles.selected
-                        : ""
-                    }`}
-                    onClick={() => {
-                      setSelectedLanguageWorker(option.value);
-                      setIsLanguageMenuOpenWorker(false);
-                    }}
-                  >
-                    {option.label}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <button
+              id="addDepartmentTask"
+              onClick={() => onSubmitDepartment(departmentText)}
+            >
+              Dodaj zadanie
+            </button>
+
+            <h3>Osobiste zadania kierownika:</h3>
+            <div className={styles.languageDropdownWrapper}>
+              <button
+                className={styles.languageButton}
+                onClick={() => setIsLanguageMenuOpenPersonal((prev) => !prev)}
+              >
+                {languageOptions.find(
+                  (option) => option.value === selectedLanguagePersonal
+                )?.label || "Select Language"}
+                <span className={styles.arrow}>
+                  {isLanguageMenuOpenPersonal ? "▲" : "▼"}
+                </span>
+              </button>
+              {isLanguageMenuOpenPersonal && (
+                <ul className={styles.languageDropdownMenu}>
+                  {languageOptions.map((option) => (
+                    <li
+                      key={option.value}
+                      className={`${styles.languageOption} ${
+                        option.value === selectedLanguagePersonal
+                          ? styles.selected
+                          : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedLanguagePersonal(option.value);
+                        setIsLanguageMenuOpenPersonal(false);
+                      }}
+                    >
+                      {option.label}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <button
+              onClick={() => toggleSpeechRecognition("personal")}
+              className={styles.microphoneButton}
+            >
+              {isListeningPersonal ? "Przestań słuchać" : "Zacznij słuchać"}
+            </button>
+            <textarea
+              id="personalManagerTaskInput"
+              placeholder="Dodaj osobiste zadanie"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            ></textarea>
+            <input
+              ref={inputFileRef}
+              type="file"
+              onChange={handleChangeFile}
+              hidden
+            />
+            <button
+              className={styles.img__button}
+              onClick={() => inputFileRef.current.click()}
+            >
+              {fileName || "Dodaj plik"}
+            </button>
+            <button id="addPersonalManagerTask" onClick={() => onSubmit(text)}>
+              Dodaj osobiste zadanie
+            </button>
           </div>
-          <button
-            onClick={() => toggleSpeechRecognition("worker")}
-            className={styles.microphoneButton}
-          >
-            {isListeningWorker ? "Stop Listening" : "Start Listening"}
-          </button>
-          <textarea
-            id="personalWorkerTaskInput"
-            placeholder="Dodaj osobiste zadanie"
-            value={workerText}
-            onChange={(e) => setWorkerText(e.target.value)}
-          ></textarea>
-          <input
-            ref={inputFileRef}
-            type="file"
-            onChange={handleChangeFile}
-            hidden
-          />
-          <button
-            className={styles.img__button}
-            onClick={() => inputFileRef.current.click()}
-          >
-            Add Image
-          </button>
-          <button
-            id="addPersonalWorkerTask"
-            onClick={() => onSubmit(workerText)}
-          >
-            Dodaj osobiste zadanie
-          </button>
-        </div>
-      )}
-    </div>
+        ) : (
+          <div id="workerSection">
+            <h3>Osobiste zadania pracownika:</h3>
+            <div className={styles.languageDropdownWrapper}>
+              <button
+                className={styles.languageButton}
+                onClick={() => setIsLanguageMenuOpenWorker((prev) => !prev)}
+              >
+                {languageOptions.find(
+                  (option) => option.value === selectedLanguageWorker
+                )?.label || "Select Language"}
+                <span className={styles.arrow}>
+                  {isLanguageMenuOpenWorker ? "▲" : "▼"}
+                </span>
+              </button>
+              {isLanguageMenuOpenWorker && (
+                <ul className={styles.languageDropdownMenu}>
+                  {languageOptions.map((option) => (
+                    <li
+                      key={option.value}
+                      className={`${styles.languageOption} ${
+                        option.value === selectedLanguageWorker
+                          ? styles.selected
+                          : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedLanguageWorker(option.value);
+                        setIsLanguageMenuOpenWorker(false);
+                      }}
+                    >
+                      {option.label}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <button
+              onClick={() => toggleSpeechRecognition("worker")}
+              className={styles.microphoneButton}
+            >
+              {isListeningWorker ? "Przestań słuchać" : "Zacznij słuchać"}
+            </button>
+            <textarea
+              id="personalWorkerTaskInput"
+              placeholder="Dodaj osobiste zadanie"
+              value={workerText}
+              onChange={(e) => setWorkerText(e.target.value)}
+            ></textarea>
+            <input
+              ref={inputFileRef}
+              type="file"
+              onChange={handleChangeFile}
+              hidden
+            />
+            <button
+              className={styles.img__button}
+              onClick={() => inputFileRef.current.click()}
+            >
+              {fileName || "Dodaj plik"}
+            </button>
+            <button
+              id="addPersonalWorkerTask"
+              onClick={() => onSubmit(workerText)}
+            >
+              Dodaj osobiste zadanie
+            </button>
+          </div>
+        )}
+      </div>{" "}
+      <Link to={"/tasks"}>
+        <button
+          style={{
+            width: "460px",
+            margin: "0px auto",
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          Przejdź do listy zadań
+        </button>
+      </Link>
+      <button
+        style={{
+          width: "460px",
+          margin: "20px auto",
+          display: "flex",
+          justifyContent: "center",
+        }}
+        onClick={() => handleLogout()}
+      >
+        Wyloguj
+      </button>
+    </>
   );
 }
 
